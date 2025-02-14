@@ -1,0 +1,86 @@
+/* General Styles */
+body {
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    background-color: #f0f0f0; /* Light grey background */
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+h1 {
+    color: #333; /* Dark grey text */
+    margin-bottom: 20px;
+}
+
+/* Video Container */
+#video-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 80%;
+    max-width: 800px;
+    background-color: #ccc; /* Grey background for video container */
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Remote Video (Stranger) */
+#remote-video {
+    width: 70%;
+    height: auto;
+    border: 2px solid #333;
+    border-radius: 10px;
+}
+
+/* Local Video (You) */
+#local-video {
+    width: 30%;
+    height: auto;
+    border: 2px solid #333;
+    border-radius: 10px;
+    margin-left: 10px; /* Add some spacing between videos */
+}
+
+/* Chat Area */
+#chat-area {
+    width: 80%;
+    max-width: 800px;
+    height: 150px;
+    margin: 20px 0;
+    padding: 10px;
+    background-color: #fff; /* White background for chat area */
+    border: 2px solid #333;
+    border-radius: 10px;
+    overflow-y: scroll;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Message Input and Button */
+#message-input {
+    width: 80%;
+    max-width: 800px;
+    padding: 10px;
+    border: 2px solid #333;
+    border-radius: 5px;
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+}
+
+#send-button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background-color: #333;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+}
+
+#send-button:hover {
+    background-color: #555;
+}
