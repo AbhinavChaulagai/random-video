@@ -20,7 +20,7 @@ h1 {
 #video-container {
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     width: 80%;
     max-width: 800px;
     background-color: #ccc; /* Grey background for video container */
@@ -37,13 +37,37 @@ h1 {
     border-radius: 10px;
 }
 
+/* Local Video Container */
+#local-video-container {
+    width: 30%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-left: 10px; /* Add some spacing between videos */
+}
+
 /* Local Video (You) */
 #local-video {
-    width: 30%;
+    width: 100%;
     height: auto;
     border: 2px solid #333;
     border-radius: 10px;
-    margin-left: 10px; /* Add some spacing between videos */
+}
+
+/* Next Button */
+#next-button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background-color: #333;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+}
+
+#next-button:hover {
+    background-color: #555;
 }
 
 /* Chat Area */
