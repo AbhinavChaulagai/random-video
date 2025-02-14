@@ -3,18 +3,19 @@ const remoteVideo = document.getElementById('remote-video');
 const chatArea = document.getElementById('chat-area');
 const messageInput = document.getElementById('message-input');
 const sendButton = document.getElementById('send-button');
+const nextButton = document.getElementById('next-button');
 
 const socket = io();
 
 let localStream;
 let remoteStream;
 let peerConnection;
+let partnerId = null;
 
 const servers = {
     iceServers: [
-        {
-            urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302']
-        }
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' }
     ]
 };
 
@@ -30,10 +31,35 @@ navigator.mediaDevices.getUserMedia(constraints)
         localStream = stream;
     })
     .catch(error => {
-        console.error('Error accessing media devices.', error);
+        console.error('Error accessing media devices:', error);
+        alert('Please allow camera and microphone access.');
     });
 
-// Handle signaling
+// Handle pairing with another user
+socket.on('paired', (id) => {
+    partnerId = id;
+    console.log('Paired with:', partnerId);
+    createPeerConnection();
+});
+
+// Handle partner disconnection
+socket.on('partner disconnected', () => {
+    console.log('Partner disconnected');
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+    }
+    remoteVideo.srcObject = null;
+    partnerId = null;
+    appendMessage('Stranger has disconnected.');
+});
+
+// Handle chat messages
+socket.on('chat message', (msg) => {
+    appendMessage(`Stranger: ${msg}`);
+});
+
+// Handle WebRTC signaling
 socket.on('offer', async (offer) => {
     if (!peerConnection) {
         createPeerConnection();
@@ -55,10 +81,7 @@ socket.on('candidate', async (candidate) => {
         console.error('Error adding received ice candidate', e);
     }
 });
-socket.on('chat message', (msg) => {
-    console.log('Received message:', msg); // Debugging
-    handleReceivedMessage(msg);
-});
+
 // Create RTCPeerConnection
 function createPeerConnection() {
     peerConnection = new RTCPeerConnection(servers);
@@ -81,35 +104,39 @@ function createPeerConnection() {
             socket.emit('candidate', event.candidate);
         }
     };
+
+    // Send an offer to the partner
+    if (partnerId) {
+        peerConnection.createOffer()
+            .then(offer => peerConnection.setLocalDescription(offer))
+            .then(() => {
+                socket.emit('offer', peerConnection.localDescription);
+            });
+    }
 }
 
-// Clear existing event listeners to avoid duplication
-socket.off('chat message'); // Remove any existing 'chat message' listeners
+// Handle "Next" button
+nextButton.addEventListener('click', () => {
+    if (partnerId) {
+        socket.emit('next');
+    }
+});
 
 // Handle chat messages
-function handleSendMessage() {
+sendButton.addEventListener('click', () => {
     const message = messageInput.value.trim();
     if (message) {
         socket.emit('chat message', message);
         appendMessage(`You: ${message}`);
-        messageInput.value = ''; // Clear the input field
+        messageInput.value = '';
     }
-    
-}
+});
 
-function handleReceivedMessage(msg) {
-    appendMessage(`Stranger: ${msg}`);
-}
-
-// Add event listeners
-sendButton.addEventListener('click', handleSendMessage);
-socket.on('chat message', handleReceivedMessage); // Register listener only once
-
-// Handle Enter key press in the message input field
+// Handle Enter key press
 messageInput.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
-        event.preventDefault(); // Prevent default behavior (e.g., form submission)
-        handleSendMessage(); // Trigger the send message function
+        event.preventDefault();
+        sendButton.click();
     }
 });
 
@@ -118,5 +145,5 @@ function appendMessage(message) {
     const messageElement = document.createElement('div');
     messageElement.textContent = message;
     chatArea.appendChild(messageElement);
-    chatArea.scrollTop = chatArea.scrollHeight; // Auto-scroll to the latest message
+    chatArea.scrollTop = chatArea.scrollHeight;
 }
