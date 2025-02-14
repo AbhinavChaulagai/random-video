@@ -1,0 +1,17 @@
+{
+    "name": "random-video-chat",
+    "version": "1.0.0",
+    "description": "A random video chat application like Omegle.",
+    "main": "server/server.js",
+    "scripts": {
+      "start": "node server/server.js",
+      "dev": "nodemon server/server.js"
+    },
+    "dependencies": {
+      "express": "^4.18.2",
+      "socket.io": "^4.7.2"
+    },
+    "devDependencies": {
+      "nodemon": "^3.0.2"
+    }
+  }
