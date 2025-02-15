@@ -3,7 +3,8 @@ const remoteVideo = document.getElementById('remote-video');
 const chatArea = document.getElementById('chat-area');
 const messageInput = document.getElementById('message-input');
 const sendButton = document.getElementById('send-button');
-const nextButton = document.getElementById('next-button');
+const startEndButton = document.getElementById('start-end-button');
+const searchingScreen = document.getElementById('searching-screen');
 
 const socket = io();
 
@@ -11,6 +12,7 @@ let localStream;
 let remoteStream;
 let peerConnection;
 let partnerId = null;
+let isSearching = false;
 
 const servers = {
     iceServers: [
@@ -35,15 +37,41 @@ navigator.mediaDevices.getUserMedia(constraints)
         alert('Please allow camera and microphone access.');
     });
 
+// Handle Start/End button click
+startEndButton.addEventListener('click', () => {
+    if (isSearching) {
+        // End search
+        socket.emit('end-search');
+        isSearching = false;
+        startEndButton.textContent = 'Start';
+        searchingScreen.style.display = 'none';
+        if (peerConnection) {
+            peerConnection.close();
+            peerConnection = null;
+        }
+        remoteVideo.srcObject = null;
+        partnerId = null;
+        appendMessage('You have ended the search.');
+    } else {
+        // Start search
+        socket.emit('start-search');
+        isSearching = true;
+        startEndButton.textContent = 'End';
+        searchingScreen.style.display = 'block';
+        appendMessage('Searching for a stranger...');
+    }
+});
+
 // Handle pairing with another user
 socket.on('paired', (id) => {
     partnerId = id;
     console.log('Paired with:', partnerId);
+    searchingScreen.style.display = 'none';
     createPeerConnection();
 });
 
 // Handle partner disconnection
-socket.on('partner disconnected', () => {
+socket.on('partner-disconnected', () => {
     console.log('Partner disconnected');
     if (peerConnection) {
         peerConnection.close();
@@ -55,7 +83,7 @@ socket.on('partner disconnected', () => {
 });
 
 // Handle chat messages
-socket.on('chat message', (msg) => {
+socket.on('chat-message', (msg) => {
     appendMessage(`Stranger: ${msg}`);
 });
 
@@ -115,18 +143,11 @@ function createPeerConnection() {
     }
 }
 
-// Handle "Next" button
-nextButton.addEventListener('click', () => {
-    if (partnerId) {
-        socket.emit('next');
-    }
-});
-
 // Handle chat messages
 sendButton.addEventListener('click', () => {
     const message = messageInput.value.trim();
     if (message) {
-        socket.emit('chat message', message);
+        socket.emit('chat-message', message);
         appendMessage(`You: ${message}`);
         messageInput.value = '';
     }
