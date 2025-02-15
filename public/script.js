@@ -4,6 +4,7 @@ const chatArea = document.getElementById('chat-area');
 const messageInput = document.getElementById('message-input');
 const sendButton = document.getElementById('send-button');
 const startEndButton = document.getElementById('start-end-button');
+const nextButton = document.getElementById('next-button');
 const searchingScreen = document.getElementById('searching-screen');
 
 const socket = io();
@@ -59,6 +60,20 @@ startEndButton.addEventListener('click', () => {
         startEndButton.textContent = 'End';
         searchingScreen.style.display = 'block';
         appendMessage('Searching for a stranger...');
+    }
+});
+
+// Handle Next button click
+nextButton.addEventListener('click', () => {
+    if (partnerId) {
+        socket.emit('next');
+        if (peerConnection) {
+            peerConnection.close();
+            peerConnection = null;
+        }
+        remoteVideo.srcObject = null;
+        partnerId = null;
+        appendMessage('You have disconnected from the stranger.');
     }
 });
 
