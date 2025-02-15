@@ -3,8 +3,11 @@ const remoteVideo = document.getElementById('remote-video');
 const chatArea = document.getElementById('chat-area');
 const messageInput = document.getElementById('message-input');
 const sendButton = document.getElementById('send-button');
-const startEndButton = document.getElementById('start-end-button');
-const searchingScreen = document.getElementById('searching-screen');
+const startButton = document.getElementById('start-button');
+const endButton = document.getElementById('end-button');
+const nextButton = document.getElementById('next-button');
+const statusMessage = document.getElementById('status-message');
+const statusText = document.getElementById('status-text');
 
 const socket = io();
 
@@ -12,7 +15,6 @@ let localStream;
 let remoteStream;
 let peerConnection;
 let partnerId = null;
-let isSearching = false;
 
 const servers = {
     iceServers: [
@@ -37,49 +39,39 @@ navigator.mediaDevices.getUserMedia(constraints)
         alert('Please allow camera and microphone access.');
     });
 
-// Handle Start/End button click
-startEndButton.addEventListener('click', () => {
-    if (isSearching) {
-        // End search
-        socket.emit('end-search');
-        isSearching = false;
-        startEndButton.textContent = 'Start';
-        searchingScreen.style.display = 'none';
-        if (peerConnection) {
-            peerConnection.close();
-            peerConnection = null;
-        }
-        remoteVideo.srcObject = null;
-        partnerId = null;
-        appendMessage('You have ended the search.');
-    } else {
-        // Start search
-        socket.emit('start-search');
-        isSearching = true;
-        startEndButton.textContent = 'End';
-        searchingScreen.style.display = 'block';
-        appendMessage('Searching for a stranger...');
-    }
+// Handle Start button click
+startButton.addEventListener('click', () => {
+    startButton.classList.add('hidden');
+    endButton.classList.remove('hidden');
+    nextButton.classList.remove('hidden');
+    statusMessage.classList.remove('hidden');
+    statusText.textContent = 'Searching for a stranger...';
+    socket.emit('start-search');
+});
+
+// Handle End button click
+endButton.addEventListener('click', () => {
+    resetUI();
+    socket.emit('end-search');
+});
+
+// Handle Next button click
+nextButton.addEventListener('click', () => {
+    resetUI();
+    socket.emit('next');
 });
 
 // Handle pairing with another user
 socket.on('paired', (id) => {
     partnerId = id;
-    console.log('Paired with:', partnerId);
-    searchingScreen.style.display = 'none';
+    statusText.textContent = 'Found a stranger!';
     createPeerConnection();
 });
 
 // Handle partner disconnection
 socket.on('partner-disconnected', () => {
-    console.log('Partner disconnected');
-    if (peerConnection) {
-        peerConnection.close();
-        peerConnection = null;
-    }
-    remoteVideo.srcObject = null;
-    partnerId = null;
-    appendMessage('Stranger has disconnected.');
+    statusText.textContent = 'Stranger has disconnected.';
+    resetUI();
 });
 
 // Handle chat messages
@@ -141,6 +133,21 @@ function createPeerConnection() {
                 socket.emit('offer', peerConnection.localDescription);
             });
     }
+}
+
+// Reset UI
+function resetUI() {
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+    }
+    remoteVideo.srcObject = null;
+    partnerId = null;
+    startButton.classList.remove('hidden');
+    endButton.classList.add('hidden');
+    nextButton.classList.add('hidden');
+    statusMessage.classList.add('hidden');
+    appendMessage('You have disconnected.');
 }
 
 // Handle chat messages
