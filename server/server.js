@@ -14,17 +14,28 @@ let activePairs = new Map(); // Map to track active pairs of users
 io.on('connection', (socket) => {
     console.log('a user connected:', socket.id);
 
-    // Add the new user to the waiting queue
-    waitingQueue.push(socket.id);
+    // Handle Start Search
+    socket.on('start-search', () => {
+        waitingQueue.push(socket.id);
+        pairUsers();
+    });
 
-    // Try to pair users
-    pairUsers();
-
-    // Handle chat messages
-    socket.on('chat message', (msg) => {
+    // Handle End Search
+    socket.on('end-search', () => {
+        waitingQueue = waitingQueue.filter(id => id !== socket.id);
         const partnerId = activePairs.get(socket.id);
         if (partnerId) {
-            io.to(partnerId).emit('chat message', msg);
+            io.to(partnerId).emit('partner-disconnected');
+            activePairs.delete(socket.id);
+            activePairs.delete(partnerId);
+        }
+    });
+
+    // Handle chat messages
+    socket.on('chat-message', (msg) => {
+        const partnerId = activePairs.get(socket.id);
+        if (partnerId) {
+            io.to(partnerId).emit('chat-message', msg);
         }
     });
 
@@ -50,34 +61,15 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Handle "Next" button
-    socket.on('next', () => {
-        const partnerId = activePairs.get(socket.id);
-        if (partnerId) {
-            // Notify the partner that the user has disconnected
-            io.to(partnerId).emit('partner disconnected');
-            // Remove the pair from activePairs
-            activePairs.delete(socket.id);
-            activePairs.delete(partnerId);
-            // Add both users back to the waiting queue
-            waitingQueue.push(socket.id, partnerId);
-            // Try to pair users again
-            pairUsers();
-        }
-    });
-
     // Handle disconnection
     socket.on('disconnect', () => {
         console.log('user disconnected:', socket.id);
         const partnerId = activePairs.get(socket.id);
         if (partnerId) {
-            // Notify the partner that the user has disconnected
-            io.to(partnerId).emit('partner disconnected');
-            // Remove the pair from activePairs
+            io.to(partnerId).emit('partner-disconnected');
             activePairs.delete(socket.id);
             activePairs.delete(partnerId);
         }
-        // Remove the user from the waiting queue
         waitingQueue = waitingQueue.filter(id => id !== socket.id);
     });
 });
