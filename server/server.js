@@ -31,18 +31,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Handle Next button
-    socket.on('next', () => {
-        const partnerId = activePairs.get(socket.id);
-        if (partnerId) {
-            io.to(partnerId).emit('partner-disconnected');
-            activePairs.delete(socket.id);
-            activePairs.delete(partnerId);
-            waitingQueue.push(socket.id); // Re-add to waiting queue
-            pairUsers(); // Try to pair again
-        }
-    });
-
     // Handle chat messages
     socket.on('chat-message', (msg) => {
         const partnerId = activePairs.get(socket.id);
