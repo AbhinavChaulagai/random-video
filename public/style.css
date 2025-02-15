@@ -55,9 +55,18 @@ h1 {
     border-radius: 10px;
 }
 
-/* Start/End Button */
-#start-end-button {
+/* Button Container */
+#button-container {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
     margin-top: 10px;
+}
+
+/* Buttons */
+#start-button,
+#end-button,
+#next-button {
     padding: 10px 20px;
     background-color: #333;
     color: #fff;
@@ -65,21 +74,26 @@ h1 {
     border-radius: 5px;
     cursor: pointer;
     font-family: 'Comic Sans MS', cursive, sans-serif;
-    width: 100%; /* Full width of the container */
+    width: 48%; /* Slightly less than half to account for spacing */
 }
 
-#start-end-button:hover {
+#start-button:hover,
+#end-button:hover,
+#next-button:hover {
     background-color: #555;
 }
 
-/* Searching Screen */
-#searching-screen {
-    display: none; /* Hidden by default */
+.hidden {
+    display: none;
+}
+
+/* Status Message */
+#status-message {
     text-align: center;
     margin-top: 20px;
 }
 
-#searching-screen p {
+#status-text {
     font-size: 18px;
     color: #333;
 }
@@ -147,9 +161,15 @@ h1 {
         border-radius: 5px; /* Smaller border radius on mobile */
     }
 
-    #start-end-button,
-    #send-button {
-        padding: 8px 16px; /* Smaller padding on mobile */
+    #button-container {
+        flex-direction: column; /* Stack buttons vertically on mobile */
+    }
+
+    #start-button,
+    #end-button,
+    #next-button {
+        width: 100%; /* Full width on mobile */
+        margin-bottom: 10px; /* Add spacing between buttons */
     }
 
     #chat-area {
