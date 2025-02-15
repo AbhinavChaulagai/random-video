@@ -86,24 +86,44 @@ socket.on('offer', async (offer) => {
     if (!peerConnection) {
         createPeerConnection();
     }
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-    const answer = await peerConnection.createAnswer();
-    console.log('Sending answer:', answer); // Debugging
-    await peerConnection.setLocalDescription(answer);
-    socket.emit('answer', answer);
+    try {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        console.log('Remote description set successfully.'); // Debugging
+        const answer = await peerConnection.createAnswer();
+        console.log('Created answer:', answer); // Debugging
+        await peerConnection.setLocalDescription(answer);
+        console.log('Local description set successfully.'); // Debugging
+        socket.emit('answer', answer);
+    } catch (error) {
+        console.error('Error setting remote description or creating answer:', error);
+    }
 });
 
 socket.on('answer', async (answer) => {
     console.log('Received answer:', answer); // Debugging
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+    if (!peerConnection) {
+        console.error('PeerConnection not initialized.'); // Debugging
+        return;
+    }
+    try {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        console.log('Remote description set successfully.'); // Debugging
+    } catch (error) {
+        console.error('Error setting remote description:', error);
+    }
 });
 
 socket.on('candidate', async (candidate) => {
     console.log('Received ICE candidate:', candidate); // Debugging
+    if (!peerConnection) {
+        console.error('PeerConnection not initialized.'); // Debugging
+        return;
+    }
     try {
         await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-    } catch (e) {
-        console.error('Error adding received ice candidate', e);
+        console.log('ICE candidate added successfully.'); // Debugging
+    } catch (error) {
+        console.error('Error adding ICE candidate:', error);
     }
 });
 
@@ -146,10 +166,11 @@ function createPeerConnection() {
     if (partnerId) {
         peerConnection.createOffer()
             .then(offer => {
-                console.log('Sending offer:', offer); // Debugging
+                console.log('Created offer:', offer); // Debugging
                 return peerConnection.setLocalDescription(offer);
             })
             .then(() => {
+                console.log('Local description set successfully.'); // Debugging
                 socket.emit('offer', peerConnection.localDescription);
             })
             .catch(error => {
