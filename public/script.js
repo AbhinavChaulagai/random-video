@@ -31,6 +31,7 @@ const constraints = {
 // Get local media stream
 navigator.mediaDevices.getUserMedia(constraints)
     .then(stream => {
+        console.log('Got local stream:', stream); // Debugging
         localVideo.srcObject = stream;
         localStream = stream;
     })
@@ -81,20 +82,24 @@ socket.on('chat-message', (msg) => {
 
 // Handle WebRTC signaling
 socket.on('offer', async (offer) => {
+    console.log('Received offer:', offer); // Debugging
     if (!peerConnection) {
         createPeerConnection();
     }
     await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
     const answer = await peerConnection.createAnswer();
+    console.log('Sending answer:', answer); // Debugging
     await peerConnection.setLocalDescription(answer);
     socket.emit('answer', answer);
 });
 
 socket.on('answer', async (answer) => {
+    console.log('Received answer:', answer); // Debugging
     await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
 });
 
 socket.on('candidate', async (candidate) => {
+    console.log('Received ICE candidate:', candidate); // Debugging
     try {
         await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
     } catch (e) {
@@ -110,17 +115,21 @@ function createPeerConnection() {
     remoteVideo.srcObject = remoteStream;
 
     localStream.getTracks().forEach(track => {
+        console.log('Adding local track:', track); // Debugging
         peerConnection.addTrack(track, localStream);
     });
 
     peerConnection.ontrack = (event) => {
-        event.streams[0].getTracks().forEach(track => {
-            remoteStream.addTrack(track);
-        });
+        console.log('Received remote track:', event.track); // Debugging
+        if (!remoteVideo.srcObject) {
+            remoteVideo.srcObject = new MediaStream();
+        }
+        remoteVideo.srcObject.addTrack(event.track);
     };
 
     peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
+            console.log('Sending ICE candidate:', event.candidate); // Debugging
             socket.emit('candidate', event.candidate);
         }
     };
@@ -128,9 +137,15 @@ function createPeerConnection() {
     // Send an offer to the partner
     if (partnerId) {
         peerConnection.createOffer()
-            .then(offer => peerConnection.setLocalDescription(offer))
+            .then(offer => {
+                console.log('Sending offer:', offer); // Debugging
+                return peerConnection.setLocalDescription(offer);
+            })
             .then(() => {
                 socket.emit('offer', peerConnection.localDescription);
+            })
+            .catch(error => {
+                console.error('Error creating offer:', error);
             });
     }
 }
