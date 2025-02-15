@@ -134,6 +134,14 @@ function createPeerConnection() {
         }
     };
 
+    peerConnection.oniceconnectionstatechange = () => {
+        console.log('ICE connection state:', peerConnection.iceConnectionState); // Debugging
+        if (peerConnection.iceConnectionState === 'failed') {
+            console.error('ICE connection failed. Restarting...');
+            restartPeerConnection();
+        }
+    };
+
     // Send an offer to the partner
     if (partnerId) {
         peerConnection.createOffer()
@@ -148,6 +156,15 @@ function createPeerConnection() {
                 console.error('Error creating offer:', error);
             });
     }
+}
+
+// Restart PeerConnection
+function restartPeerConnection() {
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+    }
+    createPeerConnection();
 }
 
 // Reset UI
