@@ -12,11 +12,15 @@
         <video id="remote-video" autoplay></video>
         <div id="local-video-container">
             <video id="local-video" autoplay muted></video>
-            <button id="start-end-button">Start</button>
+            <div id="button-container">
+                <button id="start-button">Start</button>
+                <button id="end-button" class="hidden">End</button>
+                <button id="next-button" class="hidden">Next</button>
+            </div>
         </div>
     </div>
-    <div id="searching-screen" class="hidden">
-        <p>Searching for a stranger...</p>
+    <div id="status-message" class="hidden">
+        <p id="status-text"></p>
     </div>
     <div id="chat-area"></div>
     <input type="text" id="message-input" placeholder="Type your message here...">
