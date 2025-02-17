@@ -1,50 +1,107 @@
-const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const cors = require("cors");
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
+const io = new Server(server);
 
-app.use(cors({ origin: "*" })); // Allow all origins
+app.use(express.static('public'));
 
-const io = new Server(server, {
-    cors: { origin: "*", methods: ["GET", "POST"] },
-    transports: ["websocket", "polling"],
-    allowEIO3: true // Support older clients
+let waitingQueue = []; // Queue to hold waiting users
+let activePairs = new Map(); // Map to track active pairs of users
+
+io.on('connection', (socket) => {
+    console.log('a user connected:', socket.id);
+
+    // Handle Start Search
+    socket.on('start-search', () => {
+        waitingQueue.push(socket.id);
+        pairUsers();
+    });
+
+    // Handle End Search
+    socket.on('end-search', () => {
+        waitingQueue = waitingQueue.filter(id => id !== socket.id);
+        const partnerId = activePairs.get(socket.id);
+        if (partnerId) {
+            io.to(partnerId).emit('partner-disconnected');
+            activePairs.delete(socket.id);
+            activePairs.delete(partnerId);
+        }
+    });
+
+    // Handle Next button
+    socket.on('next', () => {
+        const partnerId = activePairs.get(socket.id);
+        if (partnerId) {
+            io.to(partnerId).emit('partner-disconnected');
+            activePairs.delete(socket.id);
+            activePairs.delete(partnerId);
+            waitingQueue.push(socket.id); // Re-add to waiting queue
+            pairUsers(); // Try to pair again
+        }
+    });
+
+    // Handle chat messages
+    socket.on('chat-message', (msg) => {
+        const partnerId = activePairs.get(socket.id);
+        if (partnerId) {
+            io.to(partnerId).emit('chat-message', msg);
+        }
+    });
+
+    // Handle WebRTC signaling
+    socket.on('offer', (offer) => {
+        const partnerId = activePairs.get(socket.id);
+        if (partnerId) {
+            io.to(partnerId).emit('offer', offer);
+        }
+    });
+
+    socket.on('answer', (answer) => {
+        const partnerId = activePairs.get(socket.id);
+        if (partnerId) {
+            io.to(partnerId).emit('answer', answer);
+        }
+    });
+
+    socket.on('candidate', (candidate) => {
+        const partnerId = activePairs.get(socket.id);
+        if (partnerId) {
+            io.to(partnerId).emit('candidate', candidate);
+        }
+    });
+
+    // Handle disconnection
+    socket.on('disconnect', () => {
+        console.log('user disconnected:', socket.id);
+        const partnerId = activePairs.get(socket.id);
+        if (partnerId) {
+            io.to(partnerId).emit('partner-disconnected');
+            activePairs.delete(socket.id);
+            activePairs.delete(partnerId);
+        }
+        waitingQueue = waitingQueue.filter(id => id !== socket.id);
+    });
 });
 
-app.get("/", (req, res) => {
-    res.send("WebRTC Signaling Server is Running");
-});
+// Function to pair users
+function pairUsers() {
+    while (waitingQueue.length >= 2) {
+        const user1 = waitingQueue.shift();
+        const user2 = waitingQueue.shift();
 
-// Fix favicon.ico 404 error
-app.get("/favicon.ico", (req, res) => res.status(204));
+        // Pair the users
+        activePairs.set(user1, user2);
+        activePairs.set(user2, user1);
 
-io.on("connection", (socket) => {
-    console.log(`🔗 New client connected: ${socket.id}`);
+        // Notify both users that they are paired
+        io.to(user1).emit('paired', user2);
+        io.to(user2).emit('paired', user1);
+    }
+}
 
-    socket.on("offer", (offer) => {
-        console.log(`📨 Offer received from ${socket.id}`);
-        socket.broadcast.emit("offer", offer);
-    });
-
-    socket.on("answer", (answer) => {
-        console.log(`📩 Answer received from ${socket.id}`);
-        socket.broadcast.emit("answer", answer);
-    });
-
-    socket.on("ice-candidate", (candidate) => {
-        console.log(`❄️ ICE Candidate received from ${socket.id}`);
-        socket.broadcast.emit("ice-candidate", candidate);
-    });
-
-    socket.on("disconnect", () => {
-        console.log(`❌ Client disconnected: ${socket.id}`);
-    });
-});
-
-const PORT = process.env.PORT || 10000; // Render assigns dynamic ports
-server.listen(PORT, () => {
-    console.log(`🚀 Server is running on port ${PORT}`);
+server.listen(3000, () => {
+    console.log('Server is running on port 3000');
 });
