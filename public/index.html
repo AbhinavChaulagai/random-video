@@ -8,35 +8,27 @@
 </head>
 <body>
     <h1>Random Video Chat</h1>
-    <div id="container">
-        <!-- Video Container -->
-        <div id="video-container">
-            <!-- Remote Video (Stranger) -->
-            <video id="remote-video" autoplay playsinline></video>
-            <!-- Local Video (You) -->
+    <div id="video-container">
+        <!-- Remote Video (Stranger) -->
+        <video id="remote-video" autoplay playsinline></video>
+        <!-- Local Video (You) -->
+        <div id="local-video-container">
             <video id="local-video" autoplay muted playsinline></video>
-        </div>
-
-        <!-- Status Message -->
-        <div id="status-message" class="hidden">
-            <p id="status-text"></p>
-        </div>
-
-        <!-- Buttons -->
-        <div id="button-container">
-            <button id="start-button">Start</button>
-            <button id="end-button" class="hidden">End</button>
-            <button id="next-button" class="hidden">Next</button>
-        </div>
-
-        <!-- Chat Area -->
-        <div id="chat-area"></div>
-        <div id="chat-controls">
-            <input type="text" id="message-input" placeholder="Type your message...">
-            <button id="send-button">Send</button>
+            <div id="button-container">
+                <button id="start-button">Start</button>
+                <button id="end-button" class="hidden">End</button>
+                <button id="next-button" class="hidden">Next</button>
+            </div>
         </div>
     </div>
+    <div id="status-message" class="hidden">
+        <p id="status-text"></p>
+    </div>
+    <div id="chat-area"></div>
+    <input type="text" id="message-input" placeholder="Type your message here...">
+    <button id="send-button">Send</button>
 
+    <!-- Socket.io and WebRTC Scripts -->
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
 </body>
