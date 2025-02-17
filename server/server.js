@@ -8,19 +8,17 @@ const io = new Server(server);
 
 app.use(express.static('public'));
 
-let waitingQueue = []; // Queue to hold waiting users
-let activePairs = new Map(); // Map to track active pairs of users
+let waitingQueue = [];
+let activePairs = new Map();
 
 io.on('connection', (socket) => {
     console.log('a user connected:', socket.id);
 
-    // Handle Start Search
     socket.on('start-search', () => {
         waitingQueue.push(socket.id);
         pairUsers();
     });
 
-    // Handle End Search
     socket.on('end-search', () => {
         waitingQueue = waitingQueue.filter(id => id !== socket.id);
         const partnerId = activePairs.get(socket.id);
@@ -31,19 +29,17 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Handle Next button
     socket.on('next', () => {
         const partnerId = activePairs.get(socket.id);
         if (partnerId) {
             io.to(partnerId).emit('partner-disconnected');
             activePairs.delete(socket.id);
             activePairs.delete(partnerId);
-            waitingQueue.push(socket.id); // Re-add to waiting queue
-            pairUsers(); // Try to pair again
+            waitingQueue.push(socket.id);
+            pairUsers();
         }
     });
 
-    // Handle chat messages
     socket.on('chat-message', (msg) => {
         const partnerId = activePairs.get(socket.id);
         if (partnerId) {
@@ -51,7 +47,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Handle WebRTC signaling
     socket.on('offer', (offer) => {
         const partnerId = activePairs.get(socket.id);
         if (partnerId) {
@@ -73,7 +68,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Handle disconnection
     socket.on('disconnect', () => {
         console.log('user disconnected:', socket.id);
         const partnerId = activePairs.get(socket.id);
@@ -86,17 +80,12 @@ io.on('connection', (socket) => {
     });
 });
 
-// Function to pair users
 function pairUsers() {
     while (waitingQueue.length >= 2) {
         const user1 = waitingQueue.shift();
         const user2 = waitingQueue.shift();
-
-        // Pair the users
         activePairs.set(user1, user2);
         activePairs.set(user2, user1);
-
-        // Notify both users that they are paired
         io.to(user1).emit('paired', user2);
         io.to(user2).emit('paired', user1);
     }
