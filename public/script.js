@@ -12,7 +12,6 @@ const statusText = document.getElementById('status-text');
 const socket = io();
 
 let localStream;
-let remoteStream;
 let peerConnection;
 let partnerId = null;
 
@@ -111,14 +110,13 @@ socket.on('candidate', async (candidate) => {
 function createPeerConnection() {
     peerConnection = new RTCPeerConnection(servers);
 
-    remoteStream = new MediaStream();
-    remoteVideo.srcObject = remoteStream;
-
+    // Add local stream tracks
     localStream.getTracks().forEach(track => {
         console.log('Adding local track:', track);
         peerConnection.addTrack(track, localStream);
     });
 
+    // Handle remote stream
     peerConnection.ontrack = (event) => {
         console.log('Received remote track:', event.track);
         if (!remoteVideo.srcObject) {
@@ -127,6 +125,7 @@ function createPeerConnection() {
         remoteVideo.srcObject.addTrack(event.track);
     };
 
+    // Handle ICE candidates
     peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
             console.log('Sending ICE candidate:', event.candidate);
@@ -134,6 +133,7 @@ function createPeerConnection() {
         }
     };
 
+    // Handle ICE connection state changes
     peerConnection.oniceconnectionstatechange = () => {
         console.log('ICE connection state:', peerConnection.iceConnectionState);
         if (peerConnection.iceConnectionState === 'failed') {
