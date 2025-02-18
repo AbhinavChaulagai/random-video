@@ -146,6 +146,7 @@ function createPeerConnection() {
             remoteVideo.srcObject = new MediaStream();
         }
         remoteVideo.srcObject.addTrack(event.track);
+        console.log('Remote video stream updated:', remoteVideo.srcObject); // Debugging
     };
 
     peerConnection.onicecandidate = (event) => {
