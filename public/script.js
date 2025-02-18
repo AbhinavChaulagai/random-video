@@ -12,6 +12,7 @@ const statusText = document.getElementById('status-text');
 const socket = io();
 
 let localStream;
+let remoteStream;
 let peerConnection;
 let partnerId = null;
 
@@ -30,7 +31,7 @@ const constraints = {
 // Get local media stream
 navigator.mediaDevices.getUserMedia(constraints)
     .then(stream => {
-        console.log('Got local stream:', stream);
+        console.log('Got local stream:', stream); // Debugging
         localVideo.srcObject = stream;
         localStream = stream;
     })
@@ -81,28 +82,49 @@ socket.on('chat-message', (msg) => {
 
 // Handle WebRTC signaling
 socket.on('offer', async (offer) => {
-    console.log('Received offer:', offer);
-    if (!peerConnection) {
-        createPeerConnection();
+    console.log('Received offer:', offer); // Debugging
+    if (!peerConnection || peerConnection.signalingState !== 'stable') {
+        console.error('PeerConnection not ready for offer');
+        return;
     }
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-    const answer = await peerConnection.createAnswer();
-    console.log('Sending answer:', answer);
-    await peerConnection.setLocalDescription(answer);
-    socket.emit('answer', answer);
+    try {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        console.log('Remote description set successfully.'); // Debugging
+        const answer = await peerConnection.createAnswer();
+        console.log('Created answer:', answer); // Debugging
+        await peerConnection.setLocalDescription(answer);
+        console.log('Local description set successfully.'); // Debugging
+        socket.emit('answer', answer);
+    } catch (error) {
+        console.error('Error handling offer:', error);
+    }
 });
 
 socket.on('answer', async (answer) => {
-    console.log('Received answer:', answer);
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+    console.log('Received answer:', answer); // Debugging
+    if (!peerConnection || peerConnection.signalingState !== 'have-local-offer') {
+        console.error('Invalid state for answer:', peerConnection?.signalingState);
+        return;
+    }
+    try {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        console.log('Remote description set successfully.'); // Debugging
+    } catch (error) {
+        console.error('Error handling answer:', error);
+    }
 });
 
 socket.on('candidate', async (candidate) => {
-    console.log('Received ICE candidate:', candidate);
+    console.log('Received ICE candidate:', candidate); // Debugging
+    if (!peerConnection) {
+        console.error('PeerConnection not initialized.');
+        return;
+    }
     try {
         await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-    } catch (e) {
-        console.error('Error adding received ice candidate', e);
+        console.log('ICE candidate added successfully.'); // Debugging
+    } catch (error) {
+        console.error('Error adding ICE candidate:', error);
     }
 });
 
@@ -110,32 +132,31 @@ socket.on('candidate', async (candidate) => {
 function createPeerConnection() {
     peerConnection = new RTCPeerConnection(servers);
 
-    // Add local stream tracks
+    remoteStream = new MediaStream();
+    remoteVideo.srcObject = remoteStream;
+
     localStream.getTracks().forEach(track => {
-        console.log('Adding local track:', track);
+        console.log('Adding local track:', track); // Debugging
         peerConnection.addTrack(track, localStream);
     });
 
-    // Handle remote stream
     peerConnection.ontrack = (event) => {
-        console.log('Received remote track:', event.track);
+        console.log('Received remote track:', event.track); // Debugging
         if (!remoteVideo.srcObject) {
             remoteVideo.srcObject = new MediaStream();
         }
         remoteVideo.srcObject.addTrack(event.track);
     };
 
-    // Handle ICE candidates
     peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
-            console.log('Sending ICE candidate:', event.candidate);
+            console.log('Sending ICE candidate:', event.candidate); // Debugging
             socket.emit('candidate', event.candidate);
         }
     };
 
-    // Handle ICE connection state changes
     peerConnection.oniceconnectionstatechange = () => {
-        console.log('ICE connection state:', peerConnection.iceConnectionState);
+        console.log('ICE connection state:', peerConnection.iceConnectionState); // Debugging
         if (peerConnection.iceConnectionState === 'failed') {
             console.error('ICE connection failed. Restarting...');
             restartPeerConnection();
@@ -146,10 +167,11 @@ function createPeerConnection() {
     if (partnerId) {
         peerConnection.createOffer()
             .then(offer => {
-                console.log('Sending offer:', offer);
+                console.log('Created offer:', offer); // Debugging
                 return peerConnection.setLocalDescription(offer);
             })
             .then(() => {
+                console.log('Local description set successfully.'); // Debugging
                 socket.emit('offer', peerConnection.localDescription);
             })
             .catch(error => {
